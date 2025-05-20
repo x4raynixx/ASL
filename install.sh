@@ -7,9 +7,6 @@ mkdir -p ~/asl
 
 cat > ~/asl/freeze_android.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
-svc wifi disable
-svc data disable
-svc bluetooth disable
 termux-volume music 0
 termux-notification-remove all
 settings put global auto_sync 0
@@ -20,18 +17,18 @@ for pkg in com.facebook.katana com.whatsapp com.instagram.android; do
     am force-stop \$pkg 2>/dev/null
 done
 pm trim-caches 100M
+exit 0
 EOF
 
 chmod +x ~/asl/freeze_android.sh
 
 cat > ~/asl/unfreeze_android.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
-svc wifi enable
-svc data enable
 settings put global auto_sync 1
 settings put global window_animation_scale 1
 settings put global transition_animation_scale 1
 settings put global animator_duration_scale 1
+exit 0
 EOF
 
 chmod +x ~/asl/unfreeze_android.sh
