@@ -5,7 +5,7 @@ pkg install -y proot-distro termux-api termux-tools > /dev/null
 
 mkdir -p ~/asl
 
-# Freeze Android
+# Freeze Android (minimalna wersja)
 cat > ~/asl/freeze_android.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 termux-volume music 0
@@ -35,9 +35,14 @@ EOF
 
 chmod +x ~/asl/unfreeze_android.sh
 
-# Dual system switcher
+# Dual.sh – główny przełącznik
 cat > ~/asl/dual.sh <<'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
+
+if [[ "$PREFIX" != "/data/data/com.termux/files/usr" ]]; then
+  echo "This command can only be used from Termux, not from inside Debian."
+  exit 1
+fi
 
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
@@ -86,7 +91,7 @@ EOF
 
 chmod +x ~/asl/dual.sh
 
-# Uninstall script
+# uninstall.sh
 cat > ~/asl/uninstall.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 echo "This will uninstall ASL and Debian."
@@ -103,11 +108,11 @@ EOF
 
 chmod +x ~/asl/uninstall.sh
 
-# Enable fullscreen
+# Termux fullscreen
 echo "fullscreen = true" >> ~/.termux/termux.properties
 termux-reload-settings
 
-# Install Debian if needed
+# Debian install if needed
 if ! proot-distro list | grep -q '^debian'; then
     echo "[*] Installing Debian..."
     proot-distro install debian > /dev/null 2>&1
@@ -116,9 +121,9 @@ else
     echo "[✓] Debian already installed."
 fi
 
-# Add alias always
+# Alias – zawsze dodajemy i aktywujemy
 sed -i '/alias dual=/d' ~/.bashrc
 echo 'alias dual="bash ~/asl/dual.sh"' >> ~/.bashrc
 alias dual="bash ~/asl/dual.sh"
 
-echo "[✓] ASL setup complete. Type: dual"
+echo "[✓] ASL setup complete. Use: dual"
