@@ -1,10 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-pkg update -y
-pkg install -y proot-distro termux-api termux-tools
+pkg update -y > /dev/null
+pkg install -y proot-distro termux-api termux-tools > /dev/null
 
 mkdir -p ~/asl
 
+# Freeze Android
 cat > ~/asl/freeze_android.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 termux-volume music 0
@@ -22,6 +23,7 @@ EOF
 
 chmod +x ~/asl/freeze_android.sh
 
+# Unfreeze Android
 cat > ~/asl/unfreeze_android.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 settings put global auto_sync 1
@@ -33,6 +35,7 @@ EOF
 
 chmod +x ~/asl/unfreeze_android.sh
 
+# Dual system switcher
 cat > ~/asl/dual.sh <<'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
 
@@ -42,11 +45,11 @@ CYAN=$(tput setaf 6)
 RESET=$(tput sgr0)
 
 if [[ "$1" == "debian" && "$2" == "reset" ]]; then
-    echo "${YELLOW}Are you sure you want to RESET Debian? All data will be lost!${RESET}"
+    echo "${YELLOW}Are you sure you want to RESET Debian? This will delete all data.${RESET}"
     read -p "Type YES to confirm: " confirm
     if [[ "$confirm" == "YES" ]]; then
         echo "${CYAN}[*] Resetting Debian...${RESET}"
-        proot-distro remove debian
+        proot-distro remove debian > /dev/null 2>&1
         echo "${CYAN}[*] Reinstalling Debian...${RESET}"
         proot-distro install debian > /dev/null 2>&1
         echo "${GREEN}[✓] Debian reset complete.${RESET}"
@@ -56,7 +59,7 @@ if [[ "$1" == "debian" && "$2" == "reset" ]]; then
     exit 0
 fi
 
-echo "${CYAN}Select system:${RESET}"
+echo "${CYAN}Select system to boot:${RESET}"
 select os in "Android" "Debian"; do
     case $os in
         "Debian")
@@ -70,7 +73,7 @@ select os in "Android" "Debian"; do
             sleep 0.4
             echo "[    0.6420] Starting user session..."
             sleep 1
-            proot-distro login debian
+            exec proot-distro login debian
             ;;
         "Android")
             bash ~/asl/unfreeze_android.sh
@@ -83,6 +86,7 @@ EOF
 
 chmod +x ~/asl/dual.sh
 
+# Uninstall script
 cat > ~/asl/uninstall.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 echo "This will uninstall ASL and Debian."
@@ -99,9 +103,11 @@ EOF
 
 chmod +x ~/asl/uninstall.sh
 
+# Enable fullscreen
 echo "fullscreen = true" >> ~/.termux/termux.properties
 termux-reload-settings
 
+# Install Debian if needed
 if ! proot-distro list | grep -q '^debian'; then
     echo "[*] Installing Debian..."
     proot-distro install debian > /dev/null 2>&1
@@ -110,7 +116,9 @@ else
     echo "[✓] Debian already installed."
 fi
 
+# Add alias always
+sed -i '/alias dual=/d' ~/.bashrc
 echo 'alias dual="bash ~/asl/dual.sh"' >> ~/.bashrc
-source ~/.bashrc
+alias dual="bash ~/asl/dual.sh"
 
-echo "[✓] ASL setup complete. Use: dual"
+echo "[✓] ASL setup complete. Type: dual"
