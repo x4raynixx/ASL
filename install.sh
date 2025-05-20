@@ -7,6 +7,7 @@ mkdir -p ~/asl
 
 cat > ~/asl/freeze_android.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
+tput civis
 termux-volume music 0
 termux-notification-remove all
 settings put global auto_sync 0
@@ -17,6 +18,7 @@ for pkg in com.facebook.katana com.whatsapp com.instagram.android; do
     am force-stop \$pkg 2>/dev/null
 done
 pm trim-caches 100M
+tput cnorm
 exit 0
 EOF
 
@@ -24,10 +26,12 @@ chmod +x ~/asl/freeze_android.sh
 
 cat > ~/asl/unfreeze_android.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
+tput civis
 settings put global auto_sync 1
 settings put global window_animation_scale 1
 settings put global transition_animation_scale 1
 settings put global animator_duration_scale 1
+tput cnorm
 exit 0
 EOF
 
@@ -37,31 +41,31 @@ cat > ~/asl/dual.sh <<'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
 
 if [[ "$PREFIX" != "/data/data/com.termux/files/usr" ]]; then
-  echo "This command can only be used from Termux, not from inside Debian."
+  echo "Use this only in Termux."
   exit 1
 fi
 
-GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-CYAN=$(tput setaf 6)
-RESET=$(tput sgr0)
+G=$(tput setaf 2)
+Y=$(tput setaf 3)
+C=$(tput setaf 6)
+R=$(tput sgr0)
 
 if [[ "$1" == "debian" && "$2" == "reset" ]]; then
-    echo "${YELLOW}Are you sure you want to RESET Debian? This will delete all data.${RESET}"
-    read -p "Type YES to confirm: " confirm
-    if [[ "$confirm" == "YES" ]]; then
-        echo "${CYAN}[*] Resetting Debian...${RESET}"
+    echo "${Y}Reset Debian? All data lost.${R}"
+    read -p "YES to confirm: " c
+    if [[ "$c" == "YES" ]]; then
+        echo "${C}[*] Resetting...${R}"
         proot-distro remove debian > /dev/null 2>&1
-        echo "${CYAN}[*] Reinstalling Debian...${RESET}"
+        echo "${C}[*] Reinstalling...${R}"
         proot-distro install debian > /dev/null 2>&1
-        echo "${GREEN}[✓] Debian reset complete.${RESET}"
+        echo "${G}[✓] Reset done.${R}"
     else
-        echo "${YELLOW}Aborted.${RESET}"
+        echo "${Y}Aborted.${R}"
     fi
-    exit 0
+    exit
 fi
 
-echo "${CYAN}Select system to boot:${RESET}"
+echo "${C}Select system:${R}"
 select os in "Android" "Debian"; do
     case $os in
         "Debian")
@@ -69,17 +73,17 @@ select os in "Android" "Debian"; do
             clear
             echo "[    0.0001] Booting Debian aarch64"
             sleep 0.3
-            echo "[    0.0143] Initializing memory subsystem..."
+            echo "[    0.0143] Initializing memory..."
             sleep 0.3
-            echo "[    0.4302] Mounting root filesystem..."
+            echo "[    0.4302] Mounting rootfs..."
             sleep 0.4
-            echo "[    0.6420] Starting user session..."
+            echo "[    0.6420] Starting session..."
             sleep 1
             exec proot-distro login debian
             ;;
         "Android")
             bash ~/asl/unfreeze_android.sh
-            echo "${GREEN}Returned to Android.${RESET}"
+            echo "${G}Returned to Android.${R}"
             ;;
     esac
     break
@@ -90,12 +94,13 @@ chmod +x ~/asl/dual.sh
 
 cat > ~/asl/uninstall.sh <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
-echo "This will uninstall ASL and Debian."
-read -p "Are you sure? (yes to confirm): " answer
-if [[ "\$answer" == "yes" ]]; then
+echo "Uninstall ASL and Debian."
+read -p "yes to confirm: " a
+if [[ "\$a" == "yes" ]]; then
     proot-distro remove debian
     rm -rf ~/asl
     sed -i '/alias dual=/d' ~/.bashrc
+    rm -f $PREFIX/bin/dual
     echo "[✓] Uninstalled."
 else
     echo "Aborted."
@@ -110,13 +115,13 @@ termux-reload-settings
 if ! proot-distro list | grep -q '^debian'; then
     echo "[*] Installing Debian..."
     proot-distro install debian > /dev/null 2>&1
-    echo "[✓] Debian installed."
+    echo "[✓] Installed."
 else
-    echo "[✓] Debian already installed."
+    echo "[✓] Debian exists."
 fi
 
+cp ~/asl/dual.sh $PREFIX/bin/dual
+chmod +x $PREFIX/bin/dual
 sed -i '/alias dual=/d' ~/.bashrc
-echo 'alias dual="bash ~/asl/dual.sh"' >> ~/.bashrc
-alias dual="bash ~/asl/dual.sh"
 
-echo "[✓] ASL setup complete. Use: dual"
+echo "[✓] Setup complete. Run: dual"
