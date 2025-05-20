@@ -66,7 +66,15 @@ chmod +x ~/asl/dual.sh
 echo "fullscreen = true" >> ~/.termux/termux.properties
 termux-reload-settings
 
-proot-distro install debian
+if ! proot-distro list | grep -q '^debian'; then
+    echo "[*] Installing Debian..."
+    proot-distro install debian > /dev/null 2>&1
+    echo "[✓] Debian installed."
+else
+    echo "[✓] Debian already installed."
+fi
 
 echo 'alias dual="bash ~/asl/dual.sh"' >> ~/.bashrc
 source ~/.bashrc
+
+echo "[✓] ASL setup complete. Type: dual"
