@@ -36,7 +36,27 @@ chmod +x ~/asl/unfreeze_android.sh
 cat > ~/asl/dual.sh <<'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
 
-echo "Select system:"
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+CYAN=$(tput setaf 6)
+RESET=$(tput sgr0)
+
+if [[ "$1" == "debian" && "$2" == "reset" ]]; then
+    echo "${YELLOW}Are you sure you want to RESET Debian? All data will be lost!${RESET}"
+    read -p "Type YES to confirm: " confirm
+    if [[ "$confirm" == "YES" ]]; then
+        echo "${CYAN}[*] Resetting Debian...${RESET}"
+        proot-distro remove debian
+        echo "${CYAN}[*] Reinstalling Debian...${RESET}"
+        proot-distro install debian > /dev/null 2>&1
+        echo "${GREEN}[✓] Debian reset complete.${RESET}"
+    else
+        echo "${YELLOW}Aborted.${RESET}"
+    fi
+    exit 0
+fi
+
+echo "${CYAN}Select system:${RESET}"
 select os in "Android" "Debian"; do
     case $os in
         "Debian")
@@ -54,7 +74,7 @@ select os in "Android" "Debian"; do
             ;;
         "Android")
             bash ~/asl/unfreeze_android.sh
-            echo "Returned to Android."
+            echo "${GREEN}Returned to Android.${RESET}"
             ;;
     esac
     break
@@ -62,6 +82,22 @@ done
 EOF
 
 chmod +x ~/asl/dual.sh
+
+cat > ~/asl/uninstall.sh <<EOF
+#!/data/data/com.termux/files/usr/bin/bash
+echo "This will uninstall ASL and Debian."
+read -p "Are you sure? (yes to confirm): " answer
+if [[ "\$answer" == "yes" ]]; then
+    proot-distro remove debian
+    rm -rf ~/asl
+    sed -i '/alias dual=/d' ~/.bashrc
+    echo "[✓] Uninstalled."
+else
+    echo "Aborted."
+fi
+EOF
+
+chmod +x ~/asl/uninstall.sh
 
 echo "fullscreen = true" >> ~/.termux/termux.properties
 termux-reload-settings
@@ -77,4 +113,4 @@ fi
 echo 'alias dual="bash ~/asl/dual.sh"' >> ~/.bashrc
 source ~/.bashrc
 
-echo "[✓] ASL setup complete. Type: dual"
+echo "[✓] ASL setup complete. Use: dual"
